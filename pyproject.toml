@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "runmitopipe"
+version = "0.1.0"
+description = "Batch pipeline for mitochondrial genome reconstruction from Nanopore data (reference selection, iterative Medaka polishing, depth trimming)"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Yu-Chieh Liao", email = "jade@nhri.org.tw"}  ]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "biopython>=1.81",
+    "pandas>=2.0",
+    "pysam>=0.22",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "build",
+    "twine",
+]
+
+[project.scripts]
+runmitopipe = "mito_pipeline.pipeline:main"
+
+[project.urls]
+Repository = "https://github.com/jade-nhri/runmitopipe"
+Issues = "https://github.com/jade-nhri/runmitopipe/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
