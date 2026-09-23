@@ -34,12 +34,6 @@ conda activate runmitopipe
 ### Installing this package
 
 ```bash
-pip install runmitopipe
-```
-
-Or install from source (for development):
-
-```bash
 git clone https://github.com/jade-nhri/runmitopipe.git
 cd runmitopipe
 pip install -e ".[dev]"

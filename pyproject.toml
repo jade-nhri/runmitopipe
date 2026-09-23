@@ -21,6 +21,9 @@ dependencies = [
     "biopython>=1.81",
     "pandas>=2.0",
     "pysam>=0.22",
+    "requests>=2.31",
+    "tqdm>=4.66",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +35,10 @@ dev = [
 
 [project.scripts]
 runmitopipe = "mito_pipeline.pipeline:main"
+download-ncbi-fasta = "mito_pipeline.download_ncbi_fasta:main"
+evaluate-primers = "mito_pipeline.evaluate_primers:main"
+build-taxonomy-summary = "mito_pipeline.build_taxonomy_summary:main"
+merge-matrix-lineage = "mito_pipeline.merge_matrix_lineage:main"
 
 [project.urls]
 Repository = "https://github.com/jade-nhri/runmitopipe"
