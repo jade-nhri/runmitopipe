@@ -82,15 +82,25 @@ download-ncbi-fasta -i accessions.txt -o sequences.fasta
 
 ### `evaluate-primers`
 
-Runs `seqkit locate` for a panel of universal primers against a reference mitochondrial genome database and tabulates *in silico* primer detection (per-primer occurrence, per-genome hit matrix, overall detection rate).
+Runs `seqkit locate` for a panel of universal primers against a reference mitochondrial genome database and tabulates *in silico* primer detection (per-primer occurrence, per-genome hit matrix, overall detection rate). `tests/primers.tsv` has the ten-primer panel used in the manuscript.
 
 ```bash
-evaluate-primers --ref sequences.fasta --primers primers.tsv --outdir results/
+evaluate-primers --ref sequences.fasta --primers tests/primers.tsv --outdir results/
 ```
 
 ### `build-taxonomy-summary`
 
 Resolves the NCBI taxonomic lineage (kingdom → species) for genomes listed in a `genome_primer_matrix.tsv` (from `evaluate-primers`) and summarizes counts by phylum and class.
+
+Before running this, download NCBI's accession-to-taxid mapping and taxonomy dump (one-time; both are large, so keep them somewhere reusable rather than re-downloading per project):
+
+```bash
+wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/nucl_gb.accession2taxid.gz
+wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
+tar xzf taxdump.tar.gz nodes.dmp names.dmp
+```
+
+Then:
 
 ```bash
 build-taxonomy-summary \
@@ -100,6 +110,8 @@ build-taxonomy-summary \
     --outdir taxonomy_out/ \
     --all-genomes
 ```
+
+`--all-genomes` matters here: without it, only genomes meeting the detection criterion (`detectable == 1`) get a resolved lineage, whereas Supplementary Table S1/S2 give every genome a lineage regardless of detection status.
 
 ### `merge-matrix-lineage`
 
@@ -113,7 +125,7 @@ merge-matrix-lineage \
     --sheet-name TableS1
 ```
 
-See the "Reproducing the manuscript analysis" section below for how these four fit together end-to-end.
+See "Reproducing the manuscript analysis" below for how these four fit together end-to-end.
 
 ## Testing
 
@@ -122,22 +134,41 @@ pip install -e ".[dev]"   # only needed once, installs pytest
 pytest tests/
 ```
 
-This runs a small set of unit tests for a few helper functions used in read filtering (`get_softclip_lengths`, `get_max_indel_length`, etc.). They don't require minimap2/samtools/medaka to be installed and run in under a second, so there's no reason not to run them. They're not a substitute for testing on real sequencing data — they only catch regressions in the helper logic itself.
+This runs a small set of unit tests for a few helper functions used in
+read filtering (`get_softclip_lengths`, `get_max_indel_length`, etc.).
+They don't require minimap2/samtools/medaka to be installed and run in
+under a second, so there's no reason not to run them. They're not a
+substitute for testing on real sequencing data — they only catch
+regressions in the helper logic itself.
 
-Run this after making any code change, before committing, to catch accidental regressions early.
+Run this after making any code change, before committing, to catch
+accidental regressions early.
 
 ## Reproducing the manuscript analysis (end-to-end integration test)
 
-Unlike `pytest tests/` above, this is a slow, full end-to-end run against real data — reference database construction, real Nanopore reads from SRA, and the actual Medaka polishing pipeline. It exercises the whole tool chain, not just a few helper functions, but can take anywhere from minutes to hours depending on NCBI/SRA traffic and your machine. Run it after installing (`pip install -e ".[dev]"`) and the external tools in the Prerequisites table above, including `sra-tools`.
+Unlike `pytest tests/` above, this is a slow, full end-to-end run against
+real data -- reference database construction, real Nanopore reads from
+SRA, and the actual Medaka polishing pipeline. It exercises the whole
+tool chain, not just a few helper functions, but can take anywhere from
+minutes to hours depending on NCBI/SRA traffic and your machine. Run it
+after installing (`pip install -e ".[dev]"`) and the external tools in
+the Prerequisites table above, including `sra-tools`.
 
 **1. Build a reference mitochondrial genome database.**
-`tests/refseq_12680_acc.txt` and `tests/refseq_15658_acc.txt` are the accession lists used for the two reference datasets in the manuscript (12,680 and 15,658 accessions; ~150–190 KB as plain text, not sequence data, so they're checked into the repo directly):
+`tests/refseq_12680_acc.txt` and `tests/refseq_15658_acc.txt` are the
+accession lists used for the two reference datasets in the manuscript
+(12,680 and 15,658 accessions; ~150-190 KB as plain text, not sequence
+data, so they're checked into the repo directly). `tests/primers.tsv`
+is the ten-primer panel used in the *in silico* detection analysis
+(Supplementary Table S1/S2), for use with `evaluate-primers`.
 
 ```bash
 download-ncbi-fasta -i tests/refseq_12680_acc.txt -o mito_12680.fasta
 ```
 
-This downloads all 12,680 sequences from NCBI, retrying anything missing after the first pass (see `download-ncbi-fasta --help`). For a quicker smoke test instead of the full run, make a small subset first:
+This downloads all 12,680 sequences from NCBI, retrying anything missing
+after the first pass (see `download-ncbi-fasta --help`). For a quicker
+smoke test instead of the full run, make a small subset first:
 
 ```bash
 head -20 tests/refseq_12680_acc.txt > tests/acc_subset.txt
@@ -164,9 +195,14 @@ runmitopipe \
     --min_count 50
 ```
 
-`-m r941_min_hac_g507` selects an R9.4.1 Medaka model — match this to whatever flow cell/basecaller actually produced the reads you're testing with (see `runmitopipe --help`).
+`-m r941_min_hac_g507` selects an R9.4.1 Medaka model -- match this to
+whatever flow cell/basecaller actually produced the reads you're
+testing with (see `runmitopipe --help`).
 
-**4. Check the result.** For each sample under `SRR/`, `output/` should contain `{prefix}.final.fasta` (the reconstructed mitochondrial genome) and `{prefix}.log` (the full per-sample run log). A successful run ends with `[+] Final consensus ready: ...` for each sample in its log.
+**4. Check the result.** For each sample under `SRR/`, `output/` should
+contain `{prefix}.final.fasta` (the reconstructed mitochondrial genome)
+and `{prefix}.log` (the full per-sample run log). A successful run ends
+with `[+] Final consensus ready: ...` for each sample in its log.
 
 ## Citation
 
